@@ -55,7 +55,7 @@ pipeline {
                 echo "🔹 Deploying stack on cloud server..."
                 sh """
                     ssh -o StrictHostKeyChecking=no ${DEPLOY_SERVER} '
-                        cd ~/fusionpact-devops-challenge || git clone https://github.com/FusionpactTech/fusionpact-devops-challenge.git && cd fusionpact-devops-challenge &&
+                        cd ~/fusionpact-devops-challenge || git clone https://github.com/PV-Sudarsan/fusionpact-devops-challenge.git && cd fusionpact-devops-challenge &&
                         git pull &&
                         export FRONTEND_IMAGE=${DOCKERHUB_USER}/${FRONTEND_IMAGE}:${APP_VERSION} &&
                         export BACKEND_IMAGE=${DOCKERHUB_USER}/${BACKEND_IMAGE}:${APP_VERSION} &&
