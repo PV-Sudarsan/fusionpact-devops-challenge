@@ -1,0 +1,78 @@
+pipeline {
+    agent any
+
+    environment {
+        REGISTRY = "docker.io"
+        DOCKERHUB_USER = "sudarsan021"
+        FRONTEND_IMAGE = "fusionpact-frontend"
+        BACKEND_IMAGE = "fusionpact-backend"
+        APP_VERSION = "v1.0.${BUILD_NUMBER}"
+        DEPLOY_SERVER = "ubuntu@98.88.252.244"
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                echo "🔹 Cloning the repository..."
+                git branch: 'main', url: 'https://github.com/PV-Sudarsan/fusionpact-devops-challenge.git'
+            }
+        }
+
+        stage('Build Docker Images') {
+            steps {
+                script {
+                    echo "🔹 Building frontend and backend images..."
+                    sh """
+                        docker build -t ${DOCKERHUB_USER}/${FRONTEND_IMAGE}:${APP_VERSION} ./frontend
+                        docker build -t ${DOCKERHUB_USER}/${BACKEND_IMAGE}:${APP_VERSION} ./backend
+                    """
+                }
+            }
+        }
+
+        stage('Login to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh """
+                        echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
+                    """
+                }
+            }
+        }
+
+        stage('Push Images to DockerHub') {
+            steps {
+                sh """
+                    docker push ${DOCKERHUB_USER}/${FRONTEND_IMAGE}:${APP_VERSION}
+                    docker push ${DOCKERHUB_USER}/${BACKEND_IMAGE}:${APP_VERSION}
+                """
+            }
+        }
+
+        stage('Deploy to Cloud') {
+            steps {
+                echo "🔹 Deploying stack on cloud server..."
+                sh """
+                    ssh -o StrictHostKeyChecking=no ${DEPLOY_SERVER} '
+                        cd ~/fusionpact-devops-challenge || git clone https://github.com/FusionpactTech/fusionpact-devops-challenge.git && cd fusionpact-devops-challenge &&
+                        git pull &&
+                        export FRONTEND_IMAGE=${DOCKERHUB_USER}/${FRONTEND_IMAGE}:${APP_VERSION} &&
+                        export BACKEND_IMAGE=${DOCKERHUB_USER}/${BACKEND_IMAGE}:${APP_VERSION} &&
+                        docker-compose down &&
+                        docker-compose up -d --build
+                    '
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Deployment completed successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed. Check Jenkins logs for details."
+        }
+    }
+}
