@@ -1,0 +1,30 @@
+docker run \
+  --name=cadvisor \
+  --volume=/:/rootfs:ro \
+  --volume=/var/run:/var/run:ro \
+  --volume=/sys:/sys:ro \
+  --volume=/var/lib/docker/:/var/lib/docker:ro \
+  --publish=8080:8080 \
+  --detach \
+
+
+
+   docker run -d \
+  --name node_exporter \
+  -p 9100:9100 \
+  quay.io/prometheus/node-exporter
+
+
+
+   docker run -d \
+  --name grafana \
+  -p 3000:3000 \
+  grafana/grafana
+
+
+
+   docker run -d \
+  --name prometheus \
+  -p 9090:9090 \
+  -v ~/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
+  prom/prometheus
